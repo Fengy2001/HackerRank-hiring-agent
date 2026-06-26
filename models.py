@@ -1,6 +1,9 @@
 from typing import List, Optional, Dict, Tuple, Any, Protocol, runtime_checkable
 from pydantic import BaseModel, Field, field_validator
 from enum import Enum
+from config import LLAMACPP_ENDPOINT
+import requests
+import json
 
 
 class ModelProvider(Enum):
@@ -8,6 +11,7 @@ class ModelProvider(Enum):
 
     OLLAMA = "ollama"
     GEMINI = "gemini"
+    LLAMACPP= "llamacpp"
 
 
 @runtime_checkable
@@ -267,6 +271,37 @@ class GitHubProfile(BaseModel):
     twitter_username: Optional[str] = None
     hireable: Optional[bool] = None
 
+class LlamacppProvider:
+    """Llamacpp server provider implementation. """
+
+    def __init__(self):
+        self.session = requests.Session()
+        self.session.headers.update({"Content-Type": "application/json"})
+        self.timeout = 1800
+        self.url = LLAMACPP_ENDPOINT + "/v1/chat/completions"
+
+    def chat(
+        self,
+        model: str,
+        messages: List[Dict[str, str]],
+        options: Dict[str, Any] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        try:
+            messages = {"messages":messages}
+            response = self.session.request(
+                "POST",
+                self.url,
+                json=messages,
+                timeout=self.timeout
+            )
+            response.raise_for_status()
+            response = response.json()
+            # Clean llamacpp response for processing
+            response["choices"][0]["message"]["content"] = response["choices"][0]["message"]["content"].split("final<|message|>",1)[-1]
+            return response["choices"][0]
+        except requests.exceptions.HTTPError as err:
+            raise err
 
 class OllamaProvider:
     """Ollama LLM provider implementation."""

@@ -2,11 +2,15 @@
 
 **/*.pyc
 resume/*.pdf
+resumes
 run/*.pdf
 test_*.py
 cache/
 resume_evaluations.csv
 greenhouse_resumes/*
+inputs/*
+outputs/*
+pyproject.toml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

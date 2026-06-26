@@ -13,8 +13,8 @@ from models import ModelProvider
 load_dotenv()
 
 # Constants
-DEFAULT_MODEL_NAME = "gemma3:4b"
-DEFAULT_PROVIDER = ModelProvider.OLLAMA
+DEFAULT_MODEL_NAME = "gpt-oss-20b"
+DEFAULT_PROVIDER = ModelProvider.LLAMACPP
 
 # Get model and provider from environment or use defaults
 DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", DEFAULT_MODEL_NAME)
@@ -26,6 +26,7 @@ if PROVIDER not in [p.value for p in ModelProvider]:
 
 # Model-specific parameters
 MODEL_PARAMETERS = {
+    "gpt-oss-20b" : {"temperature" : 0.1, "top_p":0.9},
     # Ollama models
     "qwen3:1.7b": {"temperature": 0.0, "top_p": 0.9},
     "gemma3:1b": {"temperature": 0.0, "top_p": 0.9},
@@ -46,6 +47,8 @@ MODEL_PARAMETERS = {
 # Model provider mapping
 # Maps model names to their provider
 MODEL_PROVIDER_MAPPING = {
+    # Llamacpp models
+    "gpt-oss-20b" : ModelProvider.LLAMACPP,
     # Ollama models
     "qwen3:1.7b": ModelProvider.OLLAMA,
     "gemma3:1b": ModelProvider.OLLAMA,

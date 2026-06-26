@@ -1,7 +1,7 @@
 # Hiring Agent
 
-<p align="center"><strong>Resume-to-Score pipeline</strong> that extracts structured data from PDFs, enriches with GitHub signals, and outputs a fair, explainable evaluation.</p>
-
+<p align="center"><strong> HackerRanks Resume-to-Score pipeline</strong> that extracts structured data from PDFs, enriches with GitHub signals, and outputs a fair, explainable evaluation.</p>
+<p align="center"> I (Feng) made adjustments to the fallback model provider to use llamacpp server and quantized gpt-oss-20b as the evaluation model instead. Finally wrapped the whole pipeline with FastAPI for interfacing with my internal tools. Allowing for REST requests to send and recieve evaluations utilizing FastAPIs background tasks. Currently, data produced is stored in local instance, no personal need or desire to send to a DB so keeping it that way for my sake.</p>
 <p align="center">
   <a href="https://www.python.org/downloads/release/python-3110/">
     <img alt="Python" src="https://img.shields.io/badge/python-3.11%2B-blue.svg">

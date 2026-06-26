@@ -25,6 +25,132 @@ logging.basicConfig(
     format="%(asctime)s - %(name)5s - %(lineno)5d - %(funcName)33s - %(levelname)5s - %(message)s",
 )
 
+def write_evaluation_results_to_file(
+    evaluation: EvaluationData, candidate_name: str = "Candidate"
+):
+    """Write evaluation results to a text file instead of printing."""
+    lines = []
+
+    def add(text=""):
+        lines.append(str(text))
+
+    add("=" * 80)
+    add(f"📊 RESUME EVALUATION RESULTS FOR: {candidate_name}")
+    add("=" * 80)
+
+    if not evaluation:
+        add("❌ No evaluation data available")
+        return
+
+    # Calculate overall score
+    total_score = 0
+    max_score = 0
+
+    if hasattr(evaluation, "scores") and evaluation.scores:
+        for category_name, category_data in evaluation.scores.model_dump().items():
+            category_score = min(category_data["score"], category_data["max"])
+            total_score += category_score
+            max_score += category_data["max"]
+
+            if category_score < category_data["score"]:
+                add(
+                    f"⚠️  Warning: {category_name} score capped from "
+                    f"{category_data['score']} to {category_score} "
+                    f"(max: {category_data['max']})"
+                )
+
+    # Bonus points
+    if hasattr(evaluation, "bonus_points") and evaluation.bonus_points:
+        total_score += evaluation.bonus_points.total
+
+    # Deductions
+    if hasattr(evaluation, "deductions") and evaluation.deductions:
+        total_score -= evaluation.deductions.total
+
+    # Cap total score
+    max_possible_score = max_score + 20
+    if total_score > max_possible_score:
+        total_score = max_possible_score
+        add("⚠️  Warning: Total score capped at maximum possible value")
+
+    # Overall Score
+    add(f"\n🎯 OVERALL SCORE: {total_score:.1f}/{max_score}")
+
+    # Detailed Scores
+    add("\n📈 DETAILED SCORES:")
+    add("-" * 60)
+
+    if hasattr(evaluation, "scores") and evaluation.scores:
+        category_maxes = {
+            "open_source": 35,
+            "self_projects": 30,
+            "production": 25,
+            "technical_skills": 10,
+        }
+
+        # Open Source
+        if hasattr(evaluation.scores, "open_source") and evaluation.scores.open_source:
+            os_score = evaluation.scores.open_source
+            capped = min(os_score.score, category_maxes["open_source"])
+            add(f"🌐 Open Source:          {capped}/{os_score.max}")
+            add(f"   Evidence: {os_score.evidence}\n")
+
+        # Self Projects
+        if hasattr(evaluation.scores, "self_projects") and evaluation.scores.self_projects:
+            sp_score = evaluation.scores.self_projects
+            capped = min(sp_score.score, category_maxes["self_projects"])
+            add(f"🚀 Self Projects:        {capped}/{sp_score.max}")
+            add(f"   Evidence: {sp_score.evidence}\n")
+
+        # Production
+        if hasattr(evaluation.scores, "production") and evaluation.scores.production:
+            prod_score = evaluation.scores.production
+            capped = min(prod_score.score, category_maxes["production"])
+            add(f"🏢 Production Experience: {capped}/{prod_score.max}")
+            add(f"   Evidence: {prod_score.evidence}\n")
+
+        # Technical Skills
+        if hasattr(evaluation.scores, "technical_skills") and evaluation.scores.technical_skills:
+            tech_score = evaluation.scores.technical_skills
+            capped = min(tech_score.score, category_maxes["technical_skills"])
+            add(f"💻 Technical Skills:     {capped}/{tech_score.max}")
+            add(f"   Evidence: {tech_score.evidence}\n")
+
+    # Bonus Points
+    if hasattr(evaluation, "bonus_points") and evaluation.bonus_points:
+        add(f"\n⭐ BONUS POINTS: {evaluation.bonus_points.total}")
+        add("-" * 30)
+        add(f"   {evaluation.bonus_points.breakdown}")
+
+    # Deductions
+    if hasattr(evaluation, "deductions") and evaluation.deductions and evaluation.deductions.total > 0:
+        add(f"\n⚠️  DEDUCTIONS: -{evaluation.deductions.total}")
+        add("-" * 30)
+        if evaluation.deductions.reasons:
+            add(f"   {evaluation.deductions.reasons}")
+
+    # Key Strengths
+    if hasattr(evaluation, "key_strengths") and evaluation.key_strengths:
+        add("\n✅ KEY STRENGTHS:")
+        add("-" * 30)
+        for i, strength in enumerate(evaluation.key_strengths, 1):
+            add(f"  {i}. {strength}")
+
+    # Areas for Improvement
+    if hasattr(evaluation, "areas_for_improvement") and evaluation.areas_for_improvement:
+        add("\n🔧 AREAS FOR IMPROVEMENT:")
+        add("-" * 30)
+        for i, area in enumerate(evaluation.areas_for_improvement, 1):
+            add(f"  {i}. {area}")
+
+    add("\n" + "=" * 80)
+
+    # Write to file
+    filename = f"./outputs/{candidate_name.replace(' ', '_')}.txt"
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+
+    print(f"📄 Results written to: {filename}")
 
 def print_evaluation_results(
     evaluation: EvaluationData, candidate_name: str = "Candidate"
@@ -211,7 +337,7 @@ def find_profile(profiles, network):
     )
 
 
-def main(pdf_path):
+def critique(pdf_path):
     # Create cache filename based on PDF path
     cache_filename = (
         f"cache/resumecache_{os.path.basename(pdf_path).replace('.pdf', '')}.json"
@@ -336,7 +462,8 @@ def main(pdf_path):
         candidate_name = resume_data.basics.name
 
     # Print evaluation results in readable format
-    print_evaluation_results(score, candidate_name)
+    # print_evaluation_results(score, candidate_name)
+    write_evaluation_results_to_file(score, candidate_name)
 
     if DEVELOPMENT_MODE:
         csv_row = transform_evaluation_response(
@@ -374,4 +501,4 @@ if __name__ == "__main__":
         print(f"Error: File '{pdf_path}' does not exist.")
         exit(1)
 
-    main(pdf_path)
+    critique(pdf_path)
